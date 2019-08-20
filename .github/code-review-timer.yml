@@ -4,6 +4,6 @@ _extends: .github
 emoji: ':alarm_clock:'
 labelColor: 'c5def5'
 codeReviewTimeWindow: 172800000
-reminderCount: 3
+reminderCount: 5
 pollIntervalTime: 1800000
 shouldIgnoreDraftPullRequests: true

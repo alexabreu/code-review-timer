@@ -8,4 +8,3 @@ const configDefaults: Config = {
 }
 
 export default configDefaults
-

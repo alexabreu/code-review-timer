@@ -7,22 +7,15 @@ import configDefaults from './config'
 type PullRequest = Octokit.PullsGetResponse
 
 interface StateInterface {
-  hasLoadedConfig: boolean;
-  hasCreatedLabels: boolean;
   labels: Label[];
 }
 
 const state: StateInterface = {
-  hasLoadedConfig: false,
-  hasCreatedLabels: false,
   labels: [],
 }
 
 let config: Config
-const schedulerOptions = {
-  delay: true,
-  interval: 1 * 60 * 60 // 1 hour
-}
+let scheduler: any;
 
 const removeExistingLabelsFromPullRequest = 
   async(  context: Context, 
@@ -85,7 +78,6 @@ const addLabelToPullRequest = async (context: Context, pullRequest: PullRequest)
 }
 
 const createLabels = async (context: Context) => {
-  const issueParams = context.issue()
   const { emoji, labelColor: color, reminderCount } = config
   let label = ''
   for (let i = 1; i <= reminderCount; i++) {
@@ -97,14 +89,13 @@ const createLabels = async (context: Context) => {
   }
 
   try {
+    const issueParams = context.issue()
     for (let l of state.labels) {
       await context.github.issues.createLabel({...issueParams, ...l})
     }
   } catch (e) {
     context.log('Unable to create labels!', e.errors)
   }
-  
-  state.hasCreatedLabels = true;
 }
 
 const runOnAllPullRequests =
@@ -128,34 +119,38 @@ const runOnAllPullRequests =
   }
 }
 
-export = (app: Application) => {
-  createScheduler(app, schedulerOptions)
-  
+const loadConfig = async (context: Context) => {
+  try {
+    config = await context.config('code-review-timer.yml') as Config
+  } catch(e) {
+    context.log('No configuration found. Using defaults.', e)
+    config = { ...configDefaults }
+  } finally {
+    context.log('Configuration', config)
+  } 
+}
+
+export = (app: Application) => {  
   app.on('schedule.repository', async (context) => {
-    if (!state.hasLoadedConfig) { 
-      try {
-        config = await context.config('code-review-timer.yml') as Config
-      } catch(e) {
-        context.log('No configuration found. Using defaults.')
-        config = { ...configDefaults }
-      } finally {
-        state.hasLoadedConfig = true;
-      }
-    }
-
-    schedulerOptions.interval = config.pollIntervalTime
-    if (!state.hasCreatedLabels) createLabels(context)
-
+    await loadConfig(context)
     await runOnAllPullRequests(context, removeExistingLabelsFromPullRequest)
     await runOnAllPullRequests(context, addLabelToPullRequest)
   })
 
   app.on('pull_request.closed', async (context) => {
     context.log('Pull request closed...')
+    await loadConfig(context)
     await runOnAllPullRequests(
       context,
       (context: Context, pullRequest: PullRequest) => removeExistingLabelsFromPullRequest(context, pullRequest, true),
       'closed'
     )
   })
+
+  app.on(['pull_request.opened', 'pull_request.reopened'], async(context) => {
+    await loadConfig(context)
+    createScheduler(app, { delay: true, interval: config.pollIntervalTime })
+    createLabels(context)
+  });
+
 }

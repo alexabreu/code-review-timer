@@ -14,8 +14,9 @@ const removeExistingLabelsFromPullRequest =
 {
   context.log('Removing exisiting labels from pull request', pullRequest.number, 'shouldRemoveAll', shouldRemoveAll)
   const issueParams = context.issue()
+  const { emoji } = await loadConfig(context)
   const labelToBeAdded = await getLabelToBeAddedToPullRequest(context, pullRequest)
-  const existingLabels = pullRequest.labels
+  const existingLabels = pullRequest.labels.filter(label => label.name.includes(emoji))
   const labels = labelToBeAdded && !shouldRemoveAll ?
     existingLabels.filter(l => l.name !== labelToBeAdded.name) : 
     existingLabels

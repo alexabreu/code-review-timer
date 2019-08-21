@@ -12,7 +12,6 @@ const removeExistingLabelsFromPullRequest =
           shouldRemoveAll = false
   ) => 
 {
-
   context.log('Removing exisiting labels from pull request', pullRequest.number, 'shouldRemoveAll', shouldRemoveAll)
   const issueParams = context.issue()
   const labelToBeAdded = await getLabelToBeAddedToPullRequest(context, pullRequest)

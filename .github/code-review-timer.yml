@@ -1,9 +1,13 @@
 # Configuration for https://github.com/alexabreu/code-review-timer
+
+# GitHub labels must be <= 50 chars. 
+# Keep this in mind when picking an emoji and reminderCount.
+# The combination of the two could result in longer labels.
 _extends: .github
 
 emoji: ":alarm_clock:"
 labelColor: "c5def5"
 codeReviewTimeWindow: 172800000
-reminderCount: 5
+reminderCount: 3
 pollIntervalTime: 1800000
 shouldIgnoreDraftPullRequests: true

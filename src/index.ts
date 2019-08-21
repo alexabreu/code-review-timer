@@ -85,9 +85,9 @@ const createLabels = async (context: Context) => {
   }
 
   try {
-    const issueParams = context.issue()
+    const repoParams = context.repo()
     for (let l of labels) {
-      await context.github.issues.createLabel({...issueParams, ...l})
+      await context.github.issues.createLabel({...repoParams, ...l})
     }
   } catch (e) {
     context.log('Unable to create labels!', e.errors)
@@ -118,14 +118,12 @@ const runOnAllPullRequests =
 const loadConfig = async (context: Context) => {
   let config: Config
   try {
-    config = await context.config('code-review-timer.yml') as Config
-    if (!config) config = { ...configDefaults }
+    config = await context.config('code-review-timer.yml', configDefaults) as Config
   } catch(e) {
     context.log('No configuration found. Using defaults.', e)
     config = { ...configDefaults }
   }
 
-  context.log('Configuration', config)
   return config
 }
 
@@ -144,10 +142,18 @@ export = (app: Application) => {
     )
   })
 
-  app.on(['pull_request.opened', 'pull_request.reopened'], async(context) => {
-    let { pollIntervalTime: interval } = await loadConfig(context)
-    createScheduler(app, { delay: true, interval })
-    createLabels(context)
-  });
+  app.on("installation.created", async (context) => {
+    const owner = context.payload.installation.account.login;
+    const repos = context.payload.repositories;
+
+    repos.forEach(async ({ name }) => {
+      const newContext = Object.create(context);
+      newContext.repo = () => ({owner, repo: name, path: '.github/code-review-timer.yml'});
+      const { pollIntervalTime: interval } = await loadConfig(newContext)
+      createScheduler(app, { delay: true, interval })
+
+      createLabels(newContext)
+    })
+  })
 
 }

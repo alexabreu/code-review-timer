@@ -1,8 +1,8 @@
 # Configuration for https://github.com/alexabreu/code-review-timer
 _extends: .github
 
-emoji: ':alarm_clock:'
-labelColor: 'c5def5'
+emoji: ":alarm_clock:"
+labelColor: "c5def5"
 codeReviewTimeWindow: 172800000
 reminderCount: 5
 pollIntervalTime: 1800000

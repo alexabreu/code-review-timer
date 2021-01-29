@@ -1,5 +1,6 @@
 // You can import your modules
 // import index from '../src/index'
+test
 
 import nock from 'nock'
 // Requiring our app implementation
